@@ -1,0 +1,131 @@
+nthcdr
+nth
+setcar - destructive
+setcdr - destructive
+
+point/mark
+  point-min
+  point-max
+  save-excursion - save point, execute body, restore point (when used with save-restriction keep save-excursion outermost)
+  set-mark-command c-spc
+  exchange-point-and-mark c-x c-x
+  mark-whole-buffer
+  push-mark
+
+narrowing
+  save-restriction - save narrowed region, execute body, restore narrowed region
+
+buffer
+  buffer-name
+  buffer-file-name
+  buffer-size
+  current-buffer
+  other-buffer
+  switch-to-buffer
+  set-buffer - sets buffer to current buffer, but does not change display
+  get-buffer-create
+  get-buffer
+  erase-buffer
+  append-to-buffer
+  beginning-of-buffer
+  forward-line
+
+interactive - https://www.gnu.org/software/emacs/manual/html_mono/elisp.html#Using-Interactive  - providing a list will act as default parameters
+arguments are seperated by newlines ("\n"):
+  "a" - defined function name
+  "b" - buffer name, does not need to exist
+  "c" - char
+  "C" - command name
+  "d" - point
+  "D" - directory name
+  "e" - next non-keyboard event
+  "f" - existing file name
+  "F" - file name, does not need to exist
+  "G" - file/directory, does not need to exist
+  "i" - always supply nil
+  "k" - key sequence
+  "K" - key sequence
+  "m" - position of mark
+  "M" - arbitrary text, read in minibuffer
+  "n" - number, read in minibuffer
+  "N" - numeric prefix first, otherwise read number like "n"
+  "p" - numeric prefix
+  "P" - raw prefix
+  "r" - point and mark, as pair of numbers, smallest first
+  "s" - arbitrary text, terminate with c-j or ret
+  "S" - interned symbol
+  "U" - key sequence including key-up events
+  "v" - variable satisfying custom-variable-p
+  "x" - lisp object
+  "X" - value of lisp form, like "x" but evaluates object
+  "z" - coding system name (symbol), null input -> nil
+  "Z" - coding system name (symbol), non-prefix -> nil
+
+let
+  let  - set each var to val in a list of (var val) pairs
+  let* - same as above, but later var/val pairs can refer to earlier ones
+
+emacs
+  emacs-major-version
+
+message
+  %s - string or symbol
+  %d - number
+  %c - character code
+
+equality
+  =	- numeric equality
+  equal - value equality
+  eq    - reference equality
+
+help
+  xref-find-definitions - find definition in original source file
+  find-tag - similar to above? (deprecated! use above)
+  describe-function - show function documentation, c-h f
+  describe-variable - show variable documentation, c-h v
+  describe-key - show key-sequence documenation, c-h k
+
+point 	- current position of cursor, if cursor on top of char then point is
+	- immediately before said char. represented as integer number of chars
+	- up to cursor. buffer-specific
+
+mark 	- saved location in buffer. Setting a new mark moves the current mark
+	- to the mark ring (<-- should look into this more, helm?)
+
+region	- portion of buffer between point and mark
+
+
+testing stuff:
+==============
+
+(save-excursion (goto-char (point-min)) (message "point-min: %d" (point)))
+
+(defun goto-beginning () (interactive) (goto-char (point-min)))
+
+(equal "h" "h")
+(eq "h" "h")
+
+(defun dbl (x) (* 2 x))
+(dbl 5)
+(dbl 7)
+
+(defun dbl (x)
+  (interactive "p")
+  (message "your number doubled: %d" (* 2 x)))
+
+(defun dbl-test (x)
+  (interactive '(5))
+  (message "your number doubled: %d" (* 2 x)))
+
+(defun greater-than-fill-col (x)
+  (if (> x fill-column)
+      (message "%d is greater than fill-column (%d)" x fill-column)))
+
+(greater-than-fill-col 80)
+
+(defun buff-exists (buff)
+  (if (get-buffer buff)
+     (message "buffer %s exists" buff)
+    (message "buffer %s does not exist" buff)))
+
+(buff-exists "*scratch*")
