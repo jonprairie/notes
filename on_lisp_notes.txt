@@ -1,0 +1,172 @@
+macros vs functions
+
+when do you need a macro? macros can do two things that functions can't:
+1. control evaluation of arguments.
+2. expand into the the calling context. 
+
+how do macros use the ability to control the evaluation of arguments?
+1. transformation. examine parts of an argument to determine how to transform it. This is what setf does when called like (setf (car x) 'y).
+2. binding. certain macros don't evaluate their arguments (setq, let, etc), so functions can't bind variables to symbols passed in as parameters. for instance, the following won't work as intended:
+   (lambda (x)
+   	   (setq x 5))
+The literal symbol 'x will be assigned the value 5, not whatever symbol was passed in as the argument x. This would need to be a macro.
+3. conditional evaluation. like 'when', 'if', 'unless' etc.
+4. multiple evaluation. like the stepforms, or testform in 'do'.
+
+pros:
+1. computation happens at compile time
+2. integration with lisp, transform problem (at compile time) into something lisp can already handle.
+3. save function calls (since everything will be in-lined)
+
+cons:
+1. functions are data (passed as arguments, built, returned, etc), macros aren't really (more like requests to the compiler).
+2. macros can be harder to read, debugging might be hard.
+3. recursion may be more difficult.
+
+macros are vulnerable to variable capture
+
+two main types:
+1. argument capture. when the macro takes a variable name as argument and creates a 'local' variable within the macro body as well. if the caller happens to pass in the name of the local variable then there will be a name clash. For example:
+(defmacro for ((var start stop) &body body) ; wrong
+  `(do ((,var ,start (1+ ,var))
+	(limit ,stop))
+       ((> ,var limit))
+     ,@body))
+
+if the caller calls 'for' like (for (x 1 5) (princ limit)) the macro prints out the numbers 1-5, if the call looks like (for (limit 1 5) (princ limit)) though, an error will be thrown.
+2. free-symbol capture.
+
+capturable - a symbol is capturable in a macro expansion if (a) it occurs free in the skeleton of the expansion, or (b) if an argument to the macro is evaluated within a skeleton form binding the symbol.
+
+(a) (defmacro x+1 () `(+ x 1)) ; x is capturable because it occurs 'free' in the skeleton
+(b) `(let ((x 5)) (+ x ,var)) ; x is capturable because var is evaluated within a skeleton form that binds x.
+
+packages create namespaces?
+
+function names in macros can also be captured. move custom functions to packages if this becomes an issue.
+
+USE GENSYMS!
+
+other pitfalls
+
+number of evaluations
+macros evaluate forms, NOT values. If a form should only be evaluated once, but needs to be referred to multiple times then assign it to a (probably gensymed) variable and refer to the variable.
+
+order of evaluation
+forms should generally be evaluated in the order in which they appear in the list of arguments.
+
+recursion
+again, macros operate on forms NOT values. so something like:
+
+(defmacro len (n list)
+  (let ((rest (gensym)))
+    `(let ((,rest (cdr list)))
+      (if (equal ,rest nil)
+          n
+        (len (- n 1) ,rest)))))
+
+will not work when compiled, because each expansion of "len" expands into a call to "len", which, in turn, gets expanded. These expansions occur at compile-time and before the form (- n 1) is ever evaluated (at run-time), and so the expansion never terminates.
+
+this would work though:
+
+(defmacro our-or (&rest args)
+  (if (null args)
+      nil
+    (let ((sym (cl-gensym)))
+      `(let ((,sym ,(car args)))
+        (if ,sym
+            ,sym
+	  (our-or ,@(cdr args)))))))
+
+this works because, even though each call to our-or is expanded to another call to our-or, the expression ,@(cdr args) in the expanded call is evaluated at compile-time. Since args must be finite, and we have a test for null args that is also evaluated at compile-time, this expansion must terminate.
+
+essentially, we can operate on the forms (lists, for example, it's all lists) when a macro is expanded. we don't have access to the final values of these forms though.
+
+
+three basic types of 'classic' macros
+
+macros to create context
+macros to perform conditional evaluation
+macros to perform repeated evaluation
+
+macros to create context
+
+lexical environment. create bindings of lexically scoped variables, for instance: let.
+
+(defmacro our-let (bindings &rest body)
+  "allows binding variables to values within a lexical scope"
+  `((lambda (,@(mapcar
+		#'(lambda (x)
+		    (if (consp x)
+			(car x)
+		      x))
+		bindings))
+      ,@body)
+    ,@(mapcar
+       #'(lambda (x)
+	   (if (consp x)
+	       (cadr x)
+	     nil))
+       bindings)))
+
+(defmacro our-let* (bindings &rest body)
+  "allows binding variables to values witin a lexical scope. allows each variable definition to refer to past variable definitions."
+  (if (null bindings)
+      `((lambda () ,@body))
+    (our-let ((first (car bindings)))
+	     `((lambda (,(if (consp first)
+			     (car first)
+			   first))
+		 (our-let* ,(cdr bindings) ,@body))
+	       ,(if (consp first)
+		    (cadr first)
+		  nil)))))
+
+(our-let* ((x 5)
+	   (y x)
+	   (z y))
+	  (message "%s" z))
+
+or when-bind*:
+
+(defmacro our-when-bind* (bindings &rest body)
+  "allows binding variables to values within a lexical scope. if each such binding is non-nil then the body is executed, otherwise returns nil"
+  `(our-let* ,bindings
+	     (if (and ,@(mapcar
+			#'(lambda (x) (if (consp x) (car x) x))
+			bindings))
+		 ,@body)))
+
+(defmacro cleaner-when-bind* (bindings &rest body)
+  "same as our-when-bind*, but doesn't need to refer to let*."
+  (if (null bindings)
+      `(progn ,@body)
+    (let ((first-bind (car bindings)))
+      `(let (,first-bind)
+	 (if (and (consp ',first-bind)
+		  (car ',first-bind))
+	     (cleaner-when-bind* ,(cdr bindings) ,@body))))))
+
+(defmacro pauls-when-bind* (binds &rest body)
+  "paul grahams when-bind* from On Lisp. doesn't handle the case when the binding form is a single variable (for example: x instead of (x 5))"
+  (if (null binds)
+      `(progn ,@body)
+    `(let (,(car binds))
+       (if ,(caar binds)
+	   (pauls-when-bind* ,(cdr binds) ,@body)))))
+
+(pauls-when-bind* ((x 1)
+		   (y 2)
+		   (z x)
+		   w)
+		  (message "%s %s %s" x y z))
+
+(defmacro our-with-gensyms (bindings &rest body)
+  `(let (,@(mapcar
+	   #'(lambda (x) `(,x (cl-gensym)))
+	   bindings))
+     ,@body))
+
+(our-with-gensyms (x y z)
+		  (message "%s %s %s" x y z))
+	     

@@ -1,0 +1,155 @@
+# sicp
+* ch 2
+** exercises
+#+BEGIN_SRC emacs-lisp
+  ;; 2.7
+  (defun make-interval (low high) (cons low high))
+
+  (defun lower-bound (interval) (car interval))
+  (defun upper-bound (interval) (cdr interval))
+
+  (defun add-interval (int-1 int-2)
+    (make-interval
+     (+ (lower-bound int-1) (lower-bound int-2))
+     (+ (upper-bound int-1) (upper-bound int-2))))
+
+  (defun multiply-interval (int-1 int-2)
+    (let ((p1 (* (upper-bound int-1)
+                 (upper-bound int-2)))
+          (p2 (* (upper-bound int-1)
+                 (lower-bound int-2)))
+          (p3 (* (lower-bound int-1)
+                 (upper-bound int-2)))
+          (p4 (* (lower-bound int-1)
+                 (lower-bound int-2))))
+      (make-interval (min p1 p2 p3 p4)
+                     (max p1 p2 p3 p4))))
+
+  (defun divide-interval (int-1 int-2)
+    ;; 2.10
+    (if (and (< (lower-bound int-2) 0)
+             (> (upper-bound int-2) 0))
+        (error "cannot divide by an interval spanning 0")
+      (multiply-interval
+       int-1
+       (make-interval
+        (/ 1.0 (upper-bound int-2))
+        (/ 1.0 (lower-bound int-2))))))
+
+  ;; 2.8
+  (defun subtract-interval (int-1 int-2)
+    (make-interval
+     (- (lower-bound int-1) (upper-bound int-2))
+     (- (upper-bound int-1) (lower-bound int-2))))
+
+  ;; 2.9
+  ;; width A = (u1 - l1) / 2
+  ;; width B = (u2 - l2) / 2
+  ;; width (A + B) = [(u1 + u2) - (l2 + l1)] / 2
+  ;;               = [(u1 - l1) + (u2 - l2)] / 2
+  ;;               = [(u1 - l1) / 2] + [(u2 - l2) / 2]
+  ;;               = width A + width B
+
+  ;; 2.11 skipping :/
+
+  (defun make-interval-cw (center width)
+    (make-interval
+     (- center width)
+     (+ center width)))
+
+  (defun center-interval (interval)
+    (+ (/ (- (upper-bound interval)
+             (lower-bound interval))
+          2)
+       (lower-bound interval)))
+
+  (defun width-interval (interval)
+    (/ (- (upper-bound interval)
+          (lower-bound interval))
+       2.0))
+
+  ;; 2.12
+  (defun make-interval-cp (center percent)
+    (make-interval
+     (- center
+        (* center (/ percent 100.0)))
+     (+ center
+        (* center (/ percent 100.0)))))
+
+  (defun view-interval-cp (interval)
+    (cons (center-interval interval)
+          (* (/ (width-interval interval)
+                (center-interval interval))
+             100)))
+
+  ;; 2.13
+  ;; tolerance A = width A / center A
+  ;; let high A, low A, high B, low B > 0
+  ;; let C = [(high A * high B), (low A, low B)]
+  ;; tolerance (A * B) = tolerance C
+  ;; = width C / center C
+  ;; = [(high C - low C) / 2] / [(high C + low C) / 2]
+  ;; = [(high A * high B) - (low A * low B)] / [(high A * high B) + (low A * low B)]
+  ;;
+  ;; can't quite reconcile these.
+  ;; 
+  ;; = [2 * (high A * high B - low A * low B)] / [(high A + low A) * (high B + low B)]
+  ;; = [(high A * high B) + (high A * low B) - (low A * low B) - (low A * low B) +
+  ;;   (high A * high B) - (high A * low B) + (low A * low B) - (low A * low B)] /
+  ;;   [(high A + low A) * (high B + low B)]
+  ;; = [(high A - low A) * (high B + low B) + (high B - low B) * (high A + low A)] / [(high A + low A) * (high B + low B)]
+  ;; = {[(high A - low A) * (high B + low B)] / [(high A + low A) * (high B + low B)]} +
+  ;;   {[(high B - low B) * (high A + low A)] / [(high A + low A) * (high B + low B)]}
+  ;; = [(high A - low A) / (high A + low A)] + [(high B - low B) / (high B + low B)]
+  ;; = tolerance A + tolerance B
+
+  ;; 2.14
+  (defun par1 (int-1 int-2)
+    (divide-interval (make-interval 1 1)
+                     (add-interval (divide-interval (make-interval 1 1)
+                                                    int-1)
+                                   (divide-interval (make-interval 1 1)
+                                                    int-2))))
+
+  (defun par2 (int-1 int-2)
+    (divide-interval (multiply-interval int-1 int-2)
+                     (add-interval int-1 int-2)))
+
+  (view-interval-cp (par1 (make-interval 95 105)
+                          (make-interval 95 105)))
+
+  (view-interval-cp (par2 (make-interval 95 105)
+                          (make-interval 95 105)))
+
+  (view-interval-cp '(95 . 105))
+  (view-interval-cp '(45 . 55))
+
+  (view-interval-cp (divide-interval '(95 . 105)
+                                     '(95 . 105)))
+
+  ;; it appears that division also results in summing the tolerances.
+
+  ;; 2.15
+  ;; every arithmetic operation on intervals increases the width of the interval, so the more times
+  ;; an interval appears in an algebraically "equivalent" formula, the greater the uncertainty.
+
+  (view-interval-cp '(95 . 105))
+  (view-interval-cp (make-interval-cp 100 5))
+
+  (add-interval
+   (make-interval 5 6)
+   (subtract-interval
+    (make-interval 1 2)
+    (make-interval 5 6)))
+
+  (width-interval
+   (multiply-interval
+    (make-interval 9 10)
+    (make-interval 19 20)))
+
+  (divide-interval
+   (make-interval 8 10)
+   (make-interval .1 1))
+
+  (make-interval-cp 100 5)
+#+END_SRC
