@@ -1,0 +1,179 @@
+# professor Frisby's Mostly Adequate Guide to Functional Programming  
+* ch 1
+
+** OO
+
+- mutable state everywhere
+- background environment usually necessary
+- hard to reason about environment
+** functional
+
+- composable pieces
+- convenient mathematical properties emerge
+- reasoning about the pieces is easier
+- 
+* ch 2
+
+- first class functions : functions can be created, assigned, passed around, returned, invoked etc.
+ 
+** examples of what not to do
+
+*** ex 1:
+
+#+BEGIN_SRC javascript
+  var hi = function(name) {
+      return 'Hi ' + name;
+  };
+
+  var greeting = function(name) {
+      return hi(name);
+  };
+#+END_SRC
+
+this is bad because functions can be assigned, and are callable. instead of wrapping function hi with function greeting, we can just assign greeting to hi.
+
+#+BEGIN_SRC javascript
+  var hi = function(name) {
+      return 'Hi ' + name;
+  };
+
+  var greeting = hi;
+#+END_SRC
+
+*** ex 2:
+
+#+BEGIN_SRC javascript
+  var getServerStuff = function(callback) {
+      return ajaxCall(function(json) {
+          return callback(json);
+      });
+  };
+#+END_SRC
+
+here, the inner ajaxCall can be simplified to the following, since we're just passing in an anonymous fn to trivially wrap callback:
+
+#+BEGIN_SRC javascript
+  return ajaxCall(callback);
+#+END_SRC 
+
+but then the whole code becomes:
+
+#+BEGIN_SRC javascript
+  var getServerStuff = function(callback) {
+      return ajaxCall(callback);
+  }
+#+END_SRC
+
+which can be further simplified to: 
+
+#+BEGIN_SRC javascript
+  var getServerStuff = ajaxCall;
+#+END_SRC
+
+for the same reasons.
+
+*** ex 3:
+
+#+BEGIN_SRC javascript
+  var BlogController = (function() {
+    var index = function(posts) {
+      return Views.index(posts);
+    };
+
+    var show = function(post) {
+      return Views.show(post);
+    };
+
+    var create = function(attrs) {
+      return Db.create(attrs);
+    };
+
+    var update = function(post, attrs) {
+      return Db.update(post, attrs);
+    };
+
+    var destroy = function(post) {
+      return Db.destroy(post);
+    };
+
+    return {
+      index: index,
+      show: show,
+      create: create,
+      update: update,
+      destroy: destroy,
+    };
+  })();
+#+END_SRC
+
+all this does is wrap the Views and Db functions, with little actual benefit. instead we could do:
+
+#+BEGIN_SRC javascript
+  var BlogController = {
+      index: Views.index,
+      show: Views.show,
+      create: Db.create,
+      update: Db.update,
+      destroy: Db.destroy,
+  };
+#+END_SRC
+
+we could even just call the Views and Db functions explicitly.
+
+** reasons
+
+- indirection, extendibility, generality etc. is just wasted effort if you don't ever need it.
+- every time the interface of the wrapped function is changed, the wrapper function will need to change as well. if you called it in 20 places it will need to be modified in 20 places.
+- one MAJOR consideration occurs when calling a function first-class that may use 'this' under the hood.
+ 
+#+BEGIN_SRC javascript
+  var fs = require('fs');
+
+  /** scary, since Db.save will be called first-class,
+    ,* and hence 'this' will NOT point to Db in Db.save
+    ,*/
+  fs.readFile('freaky_friday.txt', Db.save);
+
+  /** better, since we bind Db, 'this' will point to Db
+    ,* inside Db.save
+    ,*/
+  fs.readFile('freaky_friday.txt', Db.save.bind(Db));
+#+END_SRC
+
+* ch 3
+
+- pure functions : function that, given the same input will always return the same output and does not have any observable side-effects.
+
+python reverse vs reversed for example. 
+
+'reverse' reverses the passed list in place, which is a side-effect
+
+'reversed' returns a new list with the same elements in reverse order, leaving the original list untouched. Hence 'reversed' is a pure function.
+
+#+BEGIN_SRC javascript
+  // impure
+  var minimum = 21
+
+  var checkAge = function(age) {
+      return age >= minimum;
+  }
+
+  // pure
+  var checkAge = function(args) {
+      var minimum = 21;
+      return age >= minimum;
+  }
+#+END_SRC
+
+ the first version is impure because it relies on 'minimum', a mutable variable, to determine the result. hence, if a process comes along and mutates 'minimum' then the return value of checkAge could change as well.
+
+- side effect : a change of system state or observable interaction with the outside world that occurs during the calculation of a result.
+
+side effects are necessary at some point, but we try to control and contain them. (functors, monads, applicative, arrow).
+
+** benefits
+- cacheable - results don't change for the same inputs, so we can cache aggressively.
+- portable/self-documenting : no external state, everything is included in the function.
+- testable
+
+
