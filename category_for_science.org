@@ -1,0 +1,11 @@
+* Category Theory for Scientists
+** Exercises
+*** 2.4.1.14
+#+BEGIN_LaTex latex
+{ \pi_1( Hom_{Set}(A, X \times Y) ) = Hom_{Set}(A, X) }
+{ \pi_2( Hom_{Set}(A, X \times Y) ) = Hom_{Set}(A, Y) }
+{ F: A \to X \times Y | F(a) = (f(a), g(a)) \forall f \in Hom_{Set}(A, X), g \in Hom_{Set}(A, Y) } = Hom_{Set}(A, X \times Y)
+#+END_LaTex latex
+*** 2.4.1.15
+**** a)
+
