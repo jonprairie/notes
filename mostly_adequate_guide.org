@@ -251,8 +251,11 @@ composition is associative.
   var tail = compose(head, reverse);
 #+END_SRC
 
+variadic compose
 #+BEGIN_SRC javascript
-  var compose = function(... args) {
-      return args.map(compose);
+  var vcompose = function(... funcs) {
+      return function(... args) {
+          return funcs.reduce(compose)(... args);
+      };
   };
 #+END_SRC
