@@ -1,18 +1,14 @@
 # professor Frisby's Mostly Adequate Guide to Functional Programming  
-* ch 1
-
+* ch 1: intro
 ** OO
-
 - mutable state everywhere
 - background environment usually necessary
 - hard to reason about environment
 ** functional
-
 - composable pieces
 - convenient mathematical properties emerge
 - reasoning about the pieces is easier
-- 
-* ch 2
+* ch 2: first class functions
 
 - first class functions : functions can be created, assigned, passed around, returned, invoked etc.
  
@@ -140,7 +136,7 @@ we could even just call the Views and Db functions explicitly.
   fs.readFile('freaky_friday.txt', Db.save.bind(Db));
 #+END_SRC
 
-* ch 3
+* ch 3: pure functions
 
 - pure functions : function that, given the same input will always return the same output and does not have any observable side-effects.
 
@@ -172,8 +168,91 @@ python reverse vs reversed for example.
 side effects are necessary at some point, but we try to control and contain them. (functors, monads, applicative, arrow).
 
 ** benefits
-- cacheable - results don't change for the same inputs, so we can cache aggressively.
+- cacheable : results don't change for the same inputs, so we can cache aggressively.
 - portable/self-documenting : no external state, everything is included in the function.
-- testable
+- testable : no external state, or reliance on background environment, so everything is trivially testable.
+- referential transparency : any function call to a pure function can be substituted with the body of the function, provide you replace parameters in the body with the values they were called with. this is a huge win for reasoning about a code base.
+- parallelizable : pure functions are trivially parallelizable, since they do not rely on global state or the external environment in any way. they are completely self-contained.
 
+* ch 4: currying
 
+- curry : passing fewer arguments to a function than it expects, and receiving a function in return that closes over the passed in values and expects the absent values as parameters.
+
+#+BEGIN_SRC javascript
+  // basic curried function
+  var add = function (x) {
+      return function (y) {return x + y;};
+  }
+
+  var addTen = add(10);
+
+  addTen(5); // ==> 15
+#+END_SRC
+
+calling the function with both an x and a y is a bit of a pain, lodash includes a way around this though.
+
+#+BEGIN_SRC javascript
+  var curry = require('lodash/curry');
+
+  var match = curry(function(what, str) {
+      return str.match(what);
+  });
+
+  matchWhiteSpace = match(/\s+/g);
+
+  matchWhiteSpace('Hello World!'); // ==> [ ' ' ]
+#+END_SRC
+
+by strategically ordering the parameters in the function definition, it's easy to create a whole class of specific functions like matchWhiteSpace. this provides a lot of power and flexibility without a lot of work.
+* ch 5: composition
+
+compose
+#+BEGIN_SRC javascript
+  var compose = function(f, g) {
+      return function(... args) {
+          return f(g(... args));
+      };
+  }
+#+END_SRC
+
+example
+#+BEGIN_SRC javascript
+  var toUpperCase = function(x) {
+      return x.toUpperCase();
+  };
+
+  var exclaim = function(x) {
+      return x + '!';
+  };
+
+  var shout = compose(toUpperCase, exclaim);
+
+  shout("hello")
+  //--> HELLO!
+#+END_SRC
+
+functions are closed under composition.
+
+composition is associative.
+
+#+BEGIN_SRC javascript
+  var head = function(x) {
+      return x[0];
+  };
+
+  var reverse = function(x) {
+      if(x.length == 0) {
+          return x;
+      } else {
+          return reverse(x.slice(1, x.length)).concat([x[0]]);
+      }
+  };
+
+  var tail = compose(head, reverse);
+#+END_SRC
+
+#+BEGIN_SRC javascript
+  var compose = function(... args) {
+      return args.map(compose);
+  };
+#+END_SRC
