@@ -1,0 +1,113 @@
+* matasano / cryptopals security challenges
+** Set 1
+*** Challenge 1: Convert hex to base64
+**** statement:
+the string:
+#+BEGIN_EXAMPLE
+  49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d
+#+END_EXAMPLE
+
+should produce:
+#+BEGIN_EXAMPLE
+  SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t
+#+END_EXAMPLE
+
+rules:
+#+BEGIN_EXAMPLE
+  always operate on raw bytes, never on encoded strings. only use hex and base64 for pretty-printing.
+#+END_EXAMPLE
+
+**** solution:
+#+BEGIN_SRC python
+  hex_encoding = "0123456789abcdef"
+  base64_encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890+/"
+
+  def hex_to_bytes(s):
+      """takes a string s of hex digits and converts it into a list of bytes.
+
+  s must have even length. 
+  each byte in the returned list will be a decimal integer between 0 and 255."""
+
+      assert(len(s) % 2 == 0)
+      hex_digits = [hex_encoding.index(digit) for digit in s]
+      return [16*d + hex_digits[i+1] for i,d in enumerate(hex_digits) if i % 2 == 0]
+
+  def three_bytes_to_four_b64(b):
+      """takes a list of three bytes and converts it into a string of base64 digits.
+
+  each byte in b must be a decimal integer between 0 and 255."""
+      
+      assert(len(b) == 3)
+
+      base64_digits = []
+
+      base64_digits.append(b[0] >> 2)
+      base64_digits.append(((b[0] % 4) << 4) + (b[1] >> 4))
+      base64_digits.append(((b[1] % 16) << 2) + (b[2] >> 6))
+      base64_digits.append(b[2] % 64)
+
+      return "".join(base64_encoding[i] for i in base64_digits)
+
+  def hex_to_base64(s):
+      """takes a string s of hex digits and converts it into a string of base64 digits.
+
+  s must have even length."""
+
+      assert(len(s) % 2 == 0)
+
+      if len(s) == 2:
+          b = hex_to_bytes(s + "0000")
+          last_four = three_bytes_to_four_b64(b)
+          return last_four[:2] + '=='
+      elif len(s) == 4:
+          b = hex_to_bytes(s + "00")
+          last_four = three_bytes_to_four_b64(b)
+          return last_four[:3] + '='
+      else:
+          b = hex_to_bytes(s[:6])
+          next_four = three_bytes_to_four_b64(b)
+          if len(s) == 6:
+              return next_four
+          else:
+              return next_four + hex_to_base64(s[6:])
+
+#+END_SRC
+*** Challenge 2: Fixed XOR
+**** statement
+Write a function that takes two equal-length buffers and produces their XOR combination.
+
+If your function works properly, then when you feed it the string:
+#+BEGIN_EXAMPLE
+  1c0111001f010100061a024b53535009181c
+#+END_EXAMPLE
+
+... after hex decoding, and when XOR'd against:
+#+BEGIN_EXAMPLE
+  686974207468652062756c6c277320657965
+#+END_EXAMPLE
+
+... should produce:
+#+BEGIN_EXAMPLE
+  746865206b696420646f6e277420706c6179
+#+END_EXAMPLE
+
+**** solution:
+#+BEGIN_SRC python
+  hex_encoding = "0123456789abcdef"
+
+  def bytes_to_hex(b):
+      """converts a list of bytes b to a string of hex digits."""
+
+      return "".join(hex_encoding[n >> 4] + hex_encoding[n % 16] for n in b)
+
+  def fixed_xor(s1, s2):
+      """takes two strings of hex digits s1 and s2 and produces a string of hex digits
+   representing the bitwise xor of s1 and s2"""
+
+      assert(len(s1) == len(s2))
+
+      b1 = hex_to_bytes(s1)
+      b2 = hex_to_bytes(s2)
+
+      return bytes_to_hex([p[0] ^ p[1] for p in zip(b1, b2)])
+#+END_SRC
