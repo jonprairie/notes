@@ -73,7 +73,7 @@ rules:
 
 #+END_SRC
 *** Challenge 2: Fixed XOR
-**** statement
+**** statement:
 Write a function that takes two equal-length buffers and produces their XOR combination.
 
 If your function works properly, then when you feed it the string:
@@ -110,4 +110,43 @@ If your function works properly, then when you feed it the string:
       b2 = hex_to_bytes(s2)
 
       return bytes_to_hex([p[0] ^ p[1] for p in zip(b1, b2)])
+#+END_SRC
+*** Challenge 3: Single-Byte XOR Cipher
+**** statement:
+The hex encoded string:
+#+BEGIN_EXAMPLE
+  1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736
+#+END_EXAMPLE
+
+... has been XOR'd against a single character. Find the key, decrypt the message.
+
+You can do this by hand. But don't: write code to do it for you.
+
+How? Devise some method for "scoring" a piece of English plaintext. Character frequency is a good metric. Evaluate each output and choose the one with the best score.
+
+Achievement Unlocked:
+#+BEGIN_EXAMPLE
+  You now have our permission to make "ETAOIN SHRDLU" jokes on Twitter.
+#+END_EXAMPLE
+**** solution:
+#+BEGIN_SRC python
+  hex_encoding = "0123456789abcdef"
+
+  def single_byte_xor(byte, byte_list):
+      return [byte ^ n for n in byte_list]
+
+  def score_msg(msg):
+      pass
+
+  def bytes_to_ascii(b):
+      return bytearray(b).decode('ascii')
+
+  def decrypt_single_byte_xor(s):
+      byte_list = hex_to_bytes(s)
+      msg_list = []
+      
+      for key in range(256):
+          msg_bytes = single_byte_xor(key, byte_list)
+          msg = bytes_to_ascii(msg_bytes)
+          msg_list.append(msg)
 #+END_SRC
