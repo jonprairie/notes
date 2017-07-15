@@ -1,6 +1,7 @@
 # sicp
 * ch 2
-** exercises
+** section 2.1
+*** exercises
 #+BEGIN_SRC emacs-lisp
   ;; 2.7
   (defun make-interval (low high) (cons low high))
@@ -152,4 +153,139 @@
    (make-interval .1 1))
 
   (make-interval-cp 100 5)
+#+END_SRC
+** section 2.2
+*** notes
+operation of creating a new pair is closed. 
+
+length
+#+BEGIN_SRC scheme
+  (define (length l)
+    (if (null? l)
+        0
+      (1+ (length (cdr l)))))
+#+END_SRC
+
+append
+#+BEGIN_SRC scheme
+  (define (append l1 l2)
+    (if (null? l1)
+        l2
+        (cons (car l1)
+              (append (cdr l1) l2))))
+#+END_SRC
+
+map
+#+BEGIN_SRC scheme
+  (define (map f l)
+    (if (null? l)
+        nil
+        (cons (f (car l))
+              (map f (cdr l)))))
+      
+#+END_SRC
+
+count-leaves
+#+BEGIN_SRC scheme
+  (define (count-leaves l)
+    (cond ((null? l) 0)
+          ((not (pair? l)) 1)
+          (else
+           (+ (count-leaves (car l))
+              (count-leaves (cdr l))))))
+#+END_SRC
+
+tmap (tree-map)
+#+BEGIN_SRC scheme
+  (define (tmap f t)
+    (cond
+     ((null? t)
+      '())
+     ((not (pair? t))
+      (f t))
+     (else
+      (cons (tmap f (car t))
+            (tmap f (cdr t))))))
+#+END_SRC
+
+*** exercises
+**** 2.17
+#+BEGIN_SRC scheme
+  (define (last-pair l)
+    (if (null? (cdr l))
+        l
+        (last-pair (cdr l))))
+#+END_SRC
+
+**** 2.18
+#+BEGIN_SRC scheme
+  (define (reverse l)
+    (let loop ((l l) (acc '()))
+      (if (null? l)
+          acc
+          (loop (cdr l) (cons (car l) acc)))))
+#+END_SRC
+
+**** 2.19
+#+BEGIN_SRC scheme
+  (define (make-change amt currency)
+    (cond
+     ((= amt 0) 1)
+     ((< amt 0) 0)
+     ((null? currency) 0)
+     (else
+      (+ (make-change amt
+                      (cdr currency))
+         (make-change (- amt (car currency))
+                      currency)))))
+#+END_SRC
+
+**** 2.20
+#+BEGIN_SRC scheme
+  (define (same-parity x . rest)
+    (cond
+     ((null? rest) nil)
+     ((= (mod x 2)
+         (mod (car rest) 2))
+      (cons (car rest)
+            (same-parity x (cdr rest))))
+     (else
+      (same-parity x (cdr rest)))))
+#+END_SRC
+
+**** 2.23
+#+BEGIN_SRC scheme
+  (define (for-each f l)
+    (begin
+      (f (car l))
+      (for-each f (cdr l))))
+#+END_SRC
+
+**** 2.25
+#+BEGIN_SRC scheme
+  (car (cdr (car (cdr (cdr '(1 3 (5 7) 9))))))
+  ;; ==> 7
+#+END_SRC
+
+**** 2.27
+#+BEGIN_SRC scheme
+  (define (deep-reverse l)
+    (let loop ((l l) (acc '()))
+      (cond
+       ((null? l) acc)
+       ((not (pair? l)) l)
+       (else
+        (loop (cdr l) (cons (deep-reverse (car l))
+                            acc))))))
+#+END_SRC
+**** 2.28
+#+BEGIN_SRC scheme
+  (define (leaves t)
+    (let loop ((t t) (l '()))
+      (cond
+       ((null? t) l)
+       ((not (pair? t)) (cons t l))
+       (else
+        (loop (car t)
+              (loop (cdr t) l))))))
 #+END_SRC

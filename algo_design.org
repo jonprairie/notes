@@ -1,0 +1,346 @@
+* The Algorithm Design Manual
+Steven S. Skiena
+
+** Ch 1
+*** 1.0
+
+three desirable properties for an algorithm:
+
+- correctness
+- efficiency
+- ease of implementation
+
+big O notation:
+
+- O is an upper bound
+- Omega is a lower bound
+- Theta is a lower and upper bound
+
+*** 1.3.1
+
+The heart of any algorithm is an _idea_. if your idea is not clearly revealed when you express an algorithm, then you are using too low-level a notation to describe it.
+
+*** 1.3.3
+
+techniques for developing counter-examples:
+
+- think small
+  - easy to reason about
+  - easy to verify
+- think exhaustively
+  - builds off 'think small'
+- hunt for weakness
+  - if an algorithm is greedy, try to concoct a scenario where greed leads to a bad result
+- go for a tie
+  - especially if the algorithm is greedy
+- seek extremes
+  - conjunction of large and small, near and far
+
+*** 1.4.1
+
+common algo objects:
+
+- permutations
+  - arrangements or orderings of items. {1,4,3,2} and {4,3,2,1} are distinct permutations.
+  - likely relevant when talking about arrangement, tour, ordering or sequence
+- subsets
+  - selections from a set of items. {1,3,4} and {2} are subsets of {1,2,3,4}.
+  - {1,4,3,2} and {4,3,2,1} are the same subset, order does **NOT** matter
+  - likely relevant when talking about cluster, collection, committee, group, packaging or selection
+- trees
+  - hierarchical relationships between items (subset of more general graphs)
+  - hierarchy, dominance relationship, ancestor/descendant relationship, taxonomy
+- graphs
+  - arbitrary relationships between items (superset of trees)
+  - networks, circuits, webs, relationships
+- points
+  - locations in some geometric space
+  - locations, sites, positions, data records
+- polygons
+  - regions in a geometric space
+  - shapes, regions, configurations, boundaries
+- strings
+  - sequences of characters
+  - text, characters, patterns, labels
+
+*** 1.4.2
+
+recursive object:
+: big things that are made from smaller things of exactly the same type as the big thing
+
+if you think of a house as a set of rooms, you can add or take away a room and still end up with a house.
+
+permutations:
+: take away an element from a permutation of N objects and you have a permutation of n-1 objects
+
+subsets:
+: take away an element from a subset and you still have a subset
+
+trees:
+: remove a node from a tree and you still have a tree, sometimes multiple
+
+graphs:
+: split a graph in half and you end up with two graphs
+
+points:
+: take a subset of points, and you still have a point set
+
+polygons:
+: split a polygon up and it becomes several polygons
+
+strings:
+: delete a character in a string and it is a smaller string
+
+*** 1.6 
+
+**** Psychic Modeling
+
+specified by four numbers:
+
+- n ... size of candidate set (narrowed down set of likely winners)
+- k ... numbers on each ticket
+- j ... number of psychically-promised correct numbers
+- l ... number of matching numbers to win a prize
+
+notice that the size of the original space doesn't make a difference, only these four numbers matter.
+
+pseudo code:
+
+```
+LottoTicketSet(n,k,l): // why not j?
+    initialize the (n l)-element bit-vector V to all false
+    while there exists a false entry in V:
+        select a k-subset T of {1,...,n} as the next ticket to buy
+	for each of the l-subsets Ti of T, V[rank(Ti)] = true // and for each of the l-subsets of T' where T' shares an l-subset with T
+    report the set of tickets that were bought
+```
+
+*** 1.7 exercises
+
+**** 1-6
+
+- {1, 2, 3, 4} 
+- {1, 2, 6}
+- {3, 4, 5}
+
+**** 1-7
+
+let z = 0, then multiply(y, z) = 0 = y*z, hence the base case is correct. Now suppose multiply(y, z) = y*z for all z <= z_n.
+
+Then for multiply(y, z_n+1) we have:
+
+: multiply(y, z_n+1) = multiply(c*y, floor([z_n+1]/c)) + y * (z_n+1 mod c)
+
+There are three cases, c divides z_n, c divides z_n + 1 and c divides neither n_n nor z_n + 1.
+
+***** c divides z_n (this case can be generalized to the case where c does not divide z_n or z_n + 1)
+
+c divides z_n, and c >= 2, so c cannot divide z_n + 1. Hence:
+
+: floor([z_n+1]/c) = floor(z_n/c) and multiply(c*y, floor([z_n+1]/c)) = multiply(c*y, floor(z_n/c))
+
+But z_n+1 mod c = z_n mod c + 1 = 0 + 1 = 1. Therefore:
+
+:   multiply(y, z_n+1)
+
+: = multiply(c*y, floor([z_n+1]/c)) + y * (z_n+1 mod c)
+
+: = multiply(c*y, floor(z_n/c)) + 0 + y * 1
+
+: = multiply(y, z_n) + y
+
+: = y*z_n + y
+
+: = y * (z_n + 1)
+
+***** c divides z_n + 1
+
+since c divides z_n + 1, then
+
+: floor([z_n+1]/c) = k for some k > 0, k belonging to *N*.
+
+we also have
+
+: z_n + 1 mod c = 0
+
+which together, gives
+
+: multiply(c*y, floor([z_n+1]/c)) + y * (z_n + 1 mod c)
+
+: = multiply(c*y, k) + y * 0
+
+: = multiply(c*y, k)
+
+Since z_n + 1 > 0, c > 2, and k = (z_n+1) / c, we have the relation:
+
+: 0 > k > z_n + 1
+
+but since k belongs to *N* and is strictly less than z_n + 1
+
+: multiply(c*y, k) = c*y*k
+
+: = (c*k)*y
+
+: = z*y
+
+**** 1-28
+
+*problem*: fast integer division
+*input*: two integers, dividend and divisor
+*output*: dividend // divisor
+
+#+BEGIN_SRC python
+  def int_div(dividend, divisor):
+      last_total = 0
+      last_count = 0
+      count = 1
+      total = divisor
+
+      if dividend < divisor:
+          return count - 1
+      else:
+          while total <= dividend:
+              last_total = total
+              last_count = count
+              count <<= 1
+              total <<= 1
+          return last_count + int_div(dividend - last_total, divisor)
+#+END_SRC
+
+** Ch 2
+*** 2.1 RAM model
+
+RAM model consists of a few things
+- each of the following operations takes one time unit: +, -, *, =, if, call
+- each memory access also takes one time unit
+- there is an infinite amount of memory
+
+RAM model is simplistic, takes no notice of cache misses, register access = disk access 
+
+despite this, basic RAM analysis is informative, especially as input grows large
+
+*** 2.2 Big O
+
+exact best/worst/average-case time complexities are complicated:
+- have too many bumps
+- require too much detail to specify precisely
+- not much more informative than simple upper/lower bound functions
+
+Big O:
+: f(n) = O(g(n)) if there exists a c and n0 such that c*g(n) > f(n) for any n > n0
+    
+Big Omega:
+: f(n) = Omega(g(n)) if there exists a c and n0 such that c*g(n) < f(n) for any n > n0
+    
+Big Theta:
+: f(n) = Theta(g(n)) if f(n) = O(g(n)) and f(n) = Omega(g(n))
+    
+Big O partitions functions into equivalence classes. 
+
+Stop and think:
+: is 2^(n+1) = Theta(2^n)?
+    
+well, if c = 3 then 3*2^n > 2*2^n = 2^(n+1) for all n (since 2^n can never be negative) so 2^(n+1) = O(2^n). If c = 1 then 1*2^n < 2*2^n = 2^(n+1) for all n, so 2^(n+1) = Omega(2^n). Hence 2^(N+1) = Theta(2^n)
+
+dominance
+: g dominates f if f = O(g(n))
+
+list of common functions in order of ascending dominance:
+1. constant O(1)
+2. logarithmic O(log n)
+3. linear O(n)
+4. superlinear O(n log n)
+5. quadratic O(n^2)
+6. cubic O(n^3)
+7. exponential O(2^n)
+8. factorial O(n!)
+
+rules for algebraic manipulation
+1. Theta(f(n)) + Theta(g(n)) = Theta(max(f(n), g(n)))
+2. Theta(c*f(n)) = Theta(f(n)) for c > 0
+3. Theta(f(n) * g(n)) = Theta(f(n)) * Theta(g(n))
+
+transitive property holds (it's an equivalence relation)
+
+selection sort, O(n^2):
+: through all values
+:: for each of the remaining values, select the one that's smallest
+
+insertion sort, O(n^2):
+: through all values
+:: while value is greater than value to the left, move value to the left
+
+*** 2.5.3
+
+#+BEGIN_SRC C
+  // some reference vs pointer stuff
+  int x = 0;
+  int &r = x; // reference to x
+  int *p = &x; // the * indicates a point to an int, the & is an operator that gets the address of x
+  int *p2 = &r; // p == p2, references are an 'alias', the memory address of a reference is the same as x
+  *p = 10; // x == 10, the * is a dereference operator
+#+END_SRC
+
+*** 2.5.4
+
+*problem*: matrix multiplication
+*input*: two matrices, A (dimension x by y) and B (y by z)
+*output*: an x by z matrix C, where C[i][j] = *i*th row of A * *j*th column of B, where * is the dot product
+
+#+NAME: Array.c
+#+BEGIN_SRC C
+  typedef struct {
+    int *array;
+    size_t used;
+    size_t size;
+  } Array;
+
+  void arrayInit(Array *a, size_t initialSize) {
+    a->array = (int *)malloc(initialSize * sizeof(int));
+    a->used = 0;
+    a->size = initialSize;
+  }
+
+  void arrayInsert(Array *a, int element) {
+    if (a->size == a->used) {
+      a->size *= 2;
+      a->array = (int *)realloc(a->array, a->size * sizeof(int));
+    }
+    a->array[a->used++] = element;
+  }
+
+  void arrayFree(Array *a) {
+    free(a->array);
+    a->array = NULL;
+    a->used = a->size = 0;
+  }
+#+END_SRC
+
+#+BEGIN_SRC C :noweb yes :includes <stdio.h> <stdlib.h>
+
+  <<Array.c>>
+
+  int matrix_mult(Array *A, Array *B, int len_a, int len_b) {
+
+    printf("A is %d x %d\nB is %d x %d\n", len_a, A[0].used, len_b, B[0].used);
+
+    return 0;
+  }
+
+  int main() {
+    
+    Array a, b;
+    arrayInit(&a, 15);
+    arrayInit(&b, 15);
+
+    Array x[] = {a};
+    Array y[] = {b};
+
+    matrix_mult(&a, &b, 1, 1);
+
+    arrayFree(&a);
+    arrayFree(&b);
+
+    return 0;
+  }
+#+END_SRC
