@@ -179,17 +179,31 @@ Achievement Unlocked:
   def single_byte_xor(byte, byte_list):
       return [byte ^ n for n in byte_list]
 
+  def penalize_punctuation(c):
+      if c in string.punctuation:
+          if c in '\',.";:?-!$"':
+              return 5
+          else:
+              return 15
+      else:
+          return 0
+
   def penalize_msg(msg):
-      unprintable_penalty = sum(map(lambda c: 0 if c in string.printable else 10, msg))
-      punctuation_penalty = sum(map(lambda c: 2 if c in string.punctuation else 0, msg))
-      number_penalty = sum(map(lambda c: 1 if c.isdigit() else 0, msg))
-      return unprintable_penalty + punctuation_penalty
+      unprintable_penalty = sum(map(lambda c: 0 if c in string.printable or c in '\x0c\x0b' else 20, msg))
+      punctuation_penalty = sum(map(penalize_punctuation, msg))
+      number_penalty = sum(map(lambda c: 5 if c.isdigit() else 0, msg))
+      return unprintable_penalty + punctuation_penalty + number_penalty 
+
+  def calculate_certainty(msg_len):
+      return 1 / (1 + 5.44314 * 2 ** (msg_len * -.222222))
 
   def score_msg(msg):
-      msg_len = len(list(filter(lambda c: c in letter_freq.keys(), msg.lower()))) or 1
-      msg_dist = [abs(100 * msg.lower().count(k) / msg_len - letter_freq[k])
+      msg_len = len(msg)
+      msg_alpha_len = len(list(filter(lambda c: c in letter_freq.keys(), msg.lower()))) or 1
+      msg_dist = [abs(100 * msg.lower().count(k) / msg_alpha_len - letter_freq[k])
                   for k in letter_freq.keys()]
-      return sum(msg_dist) + penalize_msg(msg)
+      certainty_factor = calculate_certainty(msg_len)
+      return certainty_factor * sum(msg_dist) + penalize_msg(msg)
 
   def bytes_to_ascii(b):
       try:
@@ -198,14 +212,14 @@ Achievement Unlocked:
       except UnicodeDecodeError:
           return False
 
-  def break_single_byte_xor(byte_list, result_size=5):
+  def break_single_byte_xor(byte_list, result_size=10):
       key_msg_pairs = []
       
       for key in range(256):
           msg_bytes = single_byte_xor(key, byte_list)
           msg = bytes_to_ascii(msg_bytes)
           if msg:
-              key_msg_pairs.append((key,msg))
+              key_msg_pairs.append((chr(key), msg))
 
       sorted_key_msg_pairs = sorted(key_msg_pairs, key=lambda p: score_msg(p[1]))[:result_size]
       return dict(sorted_key_msg_pairs)
@@ -554,7 +568,7 @@ Find it.
       with open('matasano/ch4.txt', 'r') as f:
           return f.read().splitlines()
 
-  def break_single_byte_xor_list(hex_list, result_size=5):
+  def break_single_byte_xor_list(hex_list, result_size=10):
       msg_candidates = [break_single_byte_xor(hex_to_bytes(s)) for s in hex_list]
       cleaned_candidates = [v for d in msg_candidates for v in d.values()]
       sorted_candidates = sorted(cleaned_candidates, key=score_msg)
@@ -673,13 +687,13 @@ Encrypt a bunch of stuff using your repeating-key XOR function. Encrypt your mai
       else:
           return [l[0] for l in list_collection if l] + interleave_lists([l[1:] for l in list_collection])
 
-  def merge_two_partitions(partition1, partition2):
+  def merge_two_partitions(partition1, partition2, result_size=10):
       key_msg_pairs = [(k1 + k2, msg1 + msg2) for k1, msg1 in partition1.items() 
                                               for k2, msg2 in partition2.items()]
-      return dict(min(key_msg_pairs, key=lambda p: score_msg(p[1])))
+      return dict(sorted(key_msg_pairs, key=lambda p: score_msg(p[1]))[:result_size])
 
   from functools import reduce
-  def break_repeating_key_xor(encrypted_bytes, keysize_tries=10, result_size=5):
+  def break_repeating_key_xor(encrypted_bytes, keysize_tries=15, result_size=10):
 
       keysize_candidates = choose_likely_keysizes(encrypted_bytes)
       key_msg_pairs = []
@@ -687,10 +701,19 @@ Encrypt a bunch of stuff using your repeating-key XOR function. Encrypt your mai
       for keysize in keysize_candidates[:keysize_tries]:
           message_partitions = partition_list(encrypted_bytes, keysize)
           decrypted_partitions_candidates = [break_single_byte_xor(m) for m in message_partitions]
-          key_msg = reduce(merge_two_partitions, decrypted_partitions_candidates).items()[0]
-          key_msg_pairs.append(key_msg)
-          # msg = "".join(interleave_lists(decrypted_partitions))
-          # msg_candidates.append(msg)
+          key_msg = reduce(merge_two_partitions, decrypted_partitions_candidates)
+          key_msg_pairs += key_msg.items()
 
-      return dict(sorted(key_msg_pairs, key=lambda p: score_msg(p[1]))[:result_size])
+      # return key_msg_pairs
+      return dict(sorted(
+          map(
+              lambda p: (p[0], decrypt_repeating_key_xor(bytes_to_hex(encrypted_bytes), p[0])),
+              key_msg_pairs
+          ),
+          key=lambda p2: score_msg(p2[1])
+      )[:result_size])
+
+  def print_key_msg_dict(key_msg):
+      for k, m in sorted(key_msg.items(), key=lambda x: score_msg(x[1])):
+          print("key: %s\n"%k, "msg: %s\n"%m, "score: %s\n"%score_msg(m))
 #+END_SRC
