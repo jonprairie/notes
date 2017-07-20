@@ -53,6 +53,33 @@ rules:
 
       return "".join(base64_encoding[i] for i in base64_digits)
 
+  def four_b64_to_three_bytes(s):
+      """takes a list of four base64 digits and converts it into a list of three bytes.
+      if the base64 string ends in '==' then only one byte is returned. if it ends in '='
+      then two bytes are returned. in all other cases three bytes are returned.
+
+  each byte in the list is an integer between 0 and 255."""
+
+      assert(len(s) == 4)
+
+      byte_list = []
+      b64_digits = [base64_encoding.index(c) if c != '=' else 0 for c in s]
+
+      byte_list.append((b64_digits[0] << 2) + (b64_digits[1] >> 4))
+      byte_list.append(((b64_digits[1] % 16) << 4) + (b64_digits[2]  >> 2))
+      byte_list.append(((b64_digits[2] % 4) << 6) + b64_digits[3])
+
+      num_bytes = 3 - s.count('=')
+      return byte_list[:num_bytes]
+
+  def base64_to_bytes(s):
+      assert(len(s) % 4 == 0)
+
+      if s:
+          return four_b64_to_three_bytes(s[:4]) + base64_to_bytes(s[4:])
+      else:
+          return [] 
+
   def hex_to_base64(s):
       """takes a string s of hex digits and converts it into a string of base64 digits.
 
@@ -716,4 +743,9 @@ Encrypt a bunch of stuff using your repeating-key XOR function. Encrypt your mai
   def print_key_msg_dict(key_msg):
       for k, m in sorted(key_msg.items(), key=lambda x: score_msg(x[1])):
           print("key: %s\n"%k, "msg: %s\n"%m, "score: %s\n"%score_msg(m))
+
+  def get_challenge_6_data():
+      with open('matasano/ch6.txt', 'r') as f:
+          return "".join(f.read().splitlines())
+      
 #+END_SRC
