@@ -906,3 +906,26 @@ Do this with code.
       return sum(repeats)
 #+END_SRC
 
+** Set 2
+
+*** Challenge 9: Implement PKCS#7 padding
+
+**** statement: 
+
+**** solution:
+#+BEGIN_SRC python :tangle matasano.py
+    def pad(byte_list, block_size=16):
+        """pad a byte_list to be a multiple of block_size by appending 
+  bytes of value k*block_size - len(byte_list), where k is the smallest 
+  integer such that k*block_size > len(byte_list)"""
+
+        block_size_diff = -len(byte_list) % block_size
+
+        return byte_list + [block_size_diff] * block_size_diff
+
+    def pad_msg(s, block_size=16):
+        byte_list = list(s.encode('ascii'))
+        padded_bytes = pad(byte_list, block_size)
+        return bytes(padded_bytes).decode('ascii')
+#+END_SRC
+
