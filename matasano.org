@@ -135,16 +135,13 @@ If your function works properly, then when you feed it the string:
 
       return "".join(hex_encoding[n >> 4] + hex_encoding[n % 16] for n in b)
 
-  def fixed_xor(s1, s2):
-      """takes two strings of hex digits s1 and s2 and produces a string of hex digits
-   representing the bitwise xor of s1 and s2"""
+  def fixed_xor(b1, b2):
+      """takes two lists of bytes b1 and b2 and produces a list of bytes
+   consisting of the bitwise xor's of corresponding bytes in b1 and b2"""
 
-      assert(len(s1) == len(s2))
+      assert(len(b1) == len(b2))
 
-      b1 = hex_to_bytes(s1)
-      b2 = hex_to_bytes(s2)
-
-      return bytes_to_hex([p[0] ^ p[1] for p in zip(b1, b2)])
+      return [p[0] ^ p[1] for p in zip(b1, b2)]
 #+END_SRC
 
 *** Challenge 3: Break Single-Byte XOR Cipher
@@ -930,7 +927,54 @@ Do this with code.
       return bytes(padded_bytes).decode('ascii')
 #+END_SRC
 
+*** Challenge 10: Implement CBC Mode
 
+**** statement:
 
+**** solution:
+#+BEGIN_SRC python :tangle matasano.py
+  def get_ch10_data():
+      with open('matasano/ch10.txt', 'r') as f:
+          return f.read().splitlines()
+
+  def rotate_left(l, n):
+      """rotate l, an iterable, n elements to the left, appending the first n elements to the end"""
+      mod_n = n % len(l)
+      return l[mod_n:] + l[:mod_n]
+
+  import Crypto.Cipher.AES as AES
+  def encrypt_bytes_aes_ecb(byte_list, key):
+      assert(len(key) in [16, 24, 32])
+      assert(len(byte_list) % 16 == 0)
+
+      encrypt = AES.new(key, AES.MODE_ECB).encrypt
+      return list(encrypt(bytes(byte_list)))
+
+  ENCRYPT = 1
+  DECRYPT = 2
+  def cbc_128(direction, func, byte_list, key, iv):
+      assert(len(key) in [16, 24, 32])
+      assert(len(byte_list) % 16 == 0)
+      assert(len(iv) == 16)
+
+      if byte_list:
+          if direction == ENCRYPT:
+              prepared_bytes = fixed_xor(byte_list[:16], iv)
+              processed_bytes = func(prepared_bytes, key)
+              next_iv = processed_bytes
+          else:
+              prepared_bytes = func(byte_list[:16], key)
+              processed_bytes = fixed_xor(prepared_bytes, iv)
+              next_iv = byte_list[:16]
+          return processed_bytes + cbc_128(direction, func, byte_list[16:], key, next_iv)
+      else:
+          return []
+
+  def encrypt_bytes_aes_cbc(byte_list, key, iv):
+      return cbc_128(ENCRYPT, encrypt_bytes_aes_ecb, byte_list, key, iv)
+
+  def decrypt_bytes_aes_cbc(byte_list, key, iv):
+      return cbc_128(DECRYPT, decrypt_bytes_aes_ecb, byte_list, key, iv)
 #+END_SRC
+
 
