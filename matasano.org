@@ -25,7 +25,7 @@ rules:
 
 #+BEGIN_SRC python :tangle matasano.py
   hex_encoding = "0123456789abcdef"
-  base64_encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234567890+/"
+  base64_encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
   def hex_to_bytes(s):
       """takes a string s of hex digits and converts it into a list of bytes.
