@@ -876,11 +876,12 @@ Do this with code.
       with open('matasano/ch7.txt', 'r') as f:
           return f.read().splitlines()
 
-  import Crypto.Cipher.AES
+  import Crypto.Cipher.AES as AES
   def decrypt_bytes_aes_ecb(byte_list, key):
-      decrypt = Cipher.AES.new(key, Cipher.AES.MODE_ECB).decrypt
+      decrypt = AES.new(key, AES.MODE_ECB).decrypt
       return list(decrypt(bytes(byte_list)))
 #+END_SRC
+
 *** Challenge 8: Detect AES in ECB mode
 
 **** statement: 
@@ -914,18 +915,22 @@ Do this with code.
 
 **** solution:
 #+BEGIN_SRC python :tangle matasano.py
-    def pad(byte_list, block_size=16):
-        """pad a byte_list to be a multiple of block_size by appending 
+  def pad(byte_list, block_size=16):
+      """pad a byte_list to be a multiple of block_size by appending 
   bytes of value k*block_size - len(byte_list), where k is the smallest 
   integer such that k*block_size > len(byte_list)"""
 
-        block_size_diff = -len(byte_list) % block_size
+      block_size_diff = -len(byte_list) % block_size
+      
+      return byte_list + [block_size_diff] * block_size_diff
 
-        return byte_list + [block_size_diff] * block_size_diff
+  def pad_msg(s, block_size=16):
+      byte_list = list(s.encode('ascii'))
+      padded_bytes = pad(byte_list, block_size)
+      return bytes(padded_bytes).decode('ascii')
+#+END_SRC
 
-    def pad_msg(s, block_size=16):
-        byte_list = list(s.encode('ascii'))
-        padded_bytes = pad(byte_list, block_size)
-        return bytes(padded_bytes).decode('ascii')
+
+
 #+END_SRC
 
