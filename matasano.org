@@ -870,3 +870,39 @@ Do this with code.
   You can obviously decrypt this using the OpenSSL command-line tool, but we're having you get ECB working in code for a reason. You'll need it a lot later on, and not just for attacking ECB.
 #+END_EXAMPLE
 
+**** solution:
+#+BEGIN_SRC python :tangle matasano.py
+  def get_ch7_file():
+      with open('matasano/ch7.txt', 'r') as f:
+          return f.read().splitlines()
+
+  import Crypto.Cipher.AES
+  def decrypt_bytes_aes_ecb(byte_list, key):
+      decrypt = Cipher.AES.new(key, Cipher.AES.MODE_ECB).decrypt
+      return list(decrypt(bytes(byte_list)))
+#+END_SRC
+*** Challenge 8: Detect AES in ECB mode
+
+**** statement: 
+
+**** solution:
+#+BEGIN_SRC python :tangle matasano.py
+  def get_ch8_file():
+      with open('matasano/ch8.txt', 'r') as f:
+          return f.read().splitlines()
+
+  import math
+  def chunk(l, chunk_size):
+      """chunk an iterable into a list of iterables, each of size chunk_size"""
+      return_size = math.ceil(len(l) / chunk_size)
+      return [
+          l[k*chunk_size:(k+1)*chunk_size]
+          for k in range(return_size)
+      ]
+
+  def count_discrete_repeats(byte_list, size=16):
+      split_bytes = chunk(byte_list, size)
+      repeats = map(lambda p: 1 if p[1] in split_bytes[p[0]+1:] else 0, enumerate(split_bytes))
+      return sum(repeats)
+#+END_SRC
+
