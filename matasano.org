@@ -977,4 +977,37 @@ Do this with code.
       return cbc_128(DECRYPT, decrypt_bytes_aes_ecb, byte_list, key, iv)
 #+END_SRC
 
+*** Challenge 11: Implement an ECB/CBC Detection Oracle
 
+**** statement:
+
+**** solution:
+#+BEGIN_SRC python :tangle matasano.py
+  import random
+  def gen_random_bytes(length):
+      return [random.randint(0,127) for n in range(length)]
+
+  def random_encrypt(msg):
+      prepend_bytes = gen_random_bytes(random.randint(5,10))
+      append_bytes = gen_random_bytes(random.randint(5,10))
+      padded_bytes = prepend_bytes + list(msg.encode('ascii')) + append_bytes
+
+      sized_bytes = pad(padded_bytes)
+      
+      rand_key = bytes(gen_random_bytes(16)).decode('utf-8')
+
+      if random.randint(0,1):
+          rand_iv = gen_random_bytes(16)
+          return encrypt_bytes_aes_cbc(sized_bytes, rand_key, rand_iv)
+      else:
+          return encrypt_bytes_aes_ecb(sized_bytes, rand_key)
+
+  ECB = 1
+  CBC = 2
+  def cbc_or_ecb_oracle(func):
+      msg = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      if count_discrete_repeats(func(msg)):
+          return ECB
+      else:
+          return CBC
+#+END_SRC
